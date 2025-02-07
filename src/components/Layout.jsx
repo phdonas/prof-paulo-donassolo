@@ -10,12 +10,14 @@ const Layout = ({ children }) => {
           <h2 className="text-xl font-bold">Gestão de Publicações PHD</h2>
           <nav>
             <Link to="/" className="mr-4 hover:underline">Dashboard</Link>
-            <Link to="/admin" className="mr-4 hover:underline">Admin</Link>
-            <Link to="/gerar-conteudo" className="hover:underline">Gerar Conteúdo</Link>
+            <Link to="/gerar-conteudo" className="mr-4 hover:underline">Gerar Conteúdo</Link>
+            <Link to="/admin" className="hover:underline">Admin</Link>
           </nav>
         </div>
       </header>
-      <main className="flex-1 container mx-auto p-4">{children}</main>
+      <main className="flex-1 container mx-auto p-4">
+        {children}
+      </main>
       <footer className="bg-gray-200 text-center p-4">
         © {new Date().getFullYear()} Gestão de Publicações PHD
       </footer>
@@ -24,3 +26,4 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
+

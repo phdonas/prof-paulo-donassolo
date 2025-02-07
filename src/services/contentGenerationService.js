@@ -9,11 +9,9 @@ async function generateContent(params) {
       },
       body: JSON.stringify(params)
     });
-
     if (!response.ok) {
       throw new Error(`Erro na função Netlify: ${response.status}`);
     }
-
     const data = await response.json();
     return data;
   } catch (error) {
@@ -25,6 +23,4 @@ async function generateContent(params) {
   }
 }
 
-export default {
-  generateContent
-};
+export default { generateContent };
