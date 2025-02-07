@@ -4,7 +4,6 @@ const { Configuration, OpenAIApi } = require('openai');
 
 exports.handler = async function(event) {
   try {
-    // Verifica se o método HTTP é POST
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 405,
@@ -12,7 +11,6 @@ exports.handler = async function(event) {
       };
     }
 
-    // Converte o corpo da requisição para objeto
     const bodyData = JSON.parse(event.body);
     const {
       pillar,
@@ -24,7 +22,6 @@ exports.handler = async function(event) {
       writingTone
     } = bodyData;
 
-    // Monta o prompt com base nos parâmetros recebidos
     const prompt = `
 Por favor, gere um conteúdo com as seguintes características:
 - **Pilar:** ${pillar}
@@ -38,13 +35,11 @@ Por favor, gere um conteúdo com as seguintes características:
 Estruture o texto com uma introdução, desenvolvimento (com dicas e argumentos) e conclusão.
     `;
 
-    // Configura o objeto OpenAI com a chave de API (definida na variável de ambiente)
     const configuration = new Configuration({
       apiKey: process.env.OPENAI_API_KEY
     });
     const openai = new OpenAIApi(configuration);
 
-    // Chama o modelo GPT-3.5-turbo com o prompt gerado
     const response = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
