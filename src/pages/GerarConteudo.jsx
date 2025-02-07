@@ -1,8 +1,118 @@
 /** src/pages/GerarConteudo.jsx **/
 
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
+
+/**
+ * Função para converter um texto Markdown simples (H1, H2, H3, **bold**)
+ * em array de Paragraph (docx). 
+ * Observa:
+ *   # Título -> Heading1
+ *   ## Subtítulo -> Heading2
+ *   ### -> Heading3
+ *   **texto** -> negrito
+ * e o resto como parágrafos normais.
+ */
+function convertMarkdownToDocxParagraphs(markdown) {
+  const paragraphs = [];
+
+  // Quebramos por linhas
+  const lines = markdown.split('\n');
+  const boldRegex = /\*\*(.*?)\*\*/g; // para texto em negrito
+
+  lines.forEach((line) => {
+    let style = 'normal'; // normal, heading1, heading2, heading3
+    let content = line.trim();
+
+    // Detecta H1, H2, H3
+    if (content.startsWith('# ')) {
+      style = 'heading1';
+      content = content.replace('# ', '').trim();
+    } else if (content.startsWith('## ')) {
+      style = 'heading2';
+      content = content.replace('## ', '').trim();
+    } else if (content.startsWith('### ')) {
+      style = 'heading3';
+      content = content.replace('### ', '').trim();
+    }
+
+    // Se a linha ficou vazia, ignoramos ou criamos um parágrafo vazio
+    if (!content) {
+      paragraphs.push(new Paragraph(''));
+      return;
+    }
+
+    // Quebrar o conteúdo em Runs, separando trechos em negrito
+    const matches = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = boldRegex.exec(content)) !== null) {
+      // texto normal antes do **
+      if (match.index > lastIndex) {
+        matches.push({
+          text: content.substring(lastIndex, match.index),
+          bold: false
+        });
+      }
+      // texto dentro de **
+      matches.push({
+        text: match[1],
+        bold: true
+      });
+      lastIndex = boldRegex.lastIndex;
+    }
+    // resto do texto depois do último **
+    if (lastIndex < content.length) {
+      matches.push({
+        text: content.substring(lastIndex),
+        bold: false
+      });
+    }
+
+    // Monta array de TextRun
+    const children = matches.map((m) =>
+      new TextRun({
+        text: m.text,
+        bold: m.bold,
+        size: style === 'heading1' ? 32 : style === 'heading2' ? 28 : style === 'heading3' ? 26 : 24
+      })
+    );
+
+    let paragraph;
+    switch (style) {
+      case 'heading1':
+        paragraph = new Paragraph({
+          heading: 'Heading1',
+          children
+        });
+        break;
+      case 'heading2':
+        paragraph = new Paragraph({
+          heading: 'Heading2',
+          children
+        });
+        break;
+      case 'heading3':
+        paragraph = new Paragraph({
+          heading: 'Heading3',
+          children
+        });
+        break;
+      default:
+        paragraph = new Paragraph({
+          children
+        });
+        break;
+    }
+
+    paragraphs.push(paragraph);
+  });
+
+  return paragraphs;
+}
 
 function GerarConteudo() {
   // Campos do formulário
@@ -30,7 +140,7 @@ function GerarConteudo() {
   const [verticalOptions, setVerticalOptions] = useState([]);
   const [pillarOptions, setPillarOptions] = useState([]);
 
-  // 1) Ao montar, carrega os dados
+  // Ao montar, carrega as Verticals e Pilares
   useEffect(() => {
     const storedVerticals = localStorage.getItem('adminVerticals');
     if (storedVerticals) {
@@ -42,7 +152,7 @@ function GerarConteudo() {
     }
   }, []);
 
-  // 2) Limpa feedback depois de uns segundos
+  // Limpar feedback depois de uns segundos
   useEffect(() => {
     if (feedback) {
       const timer = setTimeout(() => setFeedback(''), 3000);
@@ -50,7 +160,7 @@ function GerarConteudo() {
     }
   }, [feedback]);
 
-  // 3) Função para chamar GPT e gerar conteúdo
+  // Gera o conteúdo via ChatGPT
   const handleGenerate = async () => {
     setError('');
     setFeedback('Gerando conteúdo... aguarde.');
@@ -68,33 +178,40 @@ function GerarConteudo() {
     }
 
     try {
+      // Ajusta max_tokens de forma aproximada
+      // Por ex., se maxWords=1000, definimos max_tokens = ~ 2000
+      const tokens = Math.min(4000, Math.max(500, maxWords * 2));
+
       const prompt = `
-      Você é um assistente que gera conteúdo em formato Markdown. Considere estes parâmetros:
+      Gere um conteúdo em **Markdown** (com # Título, ## subtítulo, ### etc., **negritos**, etc.) e inclua um índice (table of contents) com links para cada seção. O texto deve ter **pelo menos ${minWords} palavras** e **no máximo ${maxWords} palavras**.  
       - Vertical: ${vertical}
       - Pilar: ${pillar}
       - Tipo de Conteúdo: ${contentType}
       - Público-Alvo: ${targetAudience}
-      - Tópico específico: ${topic || '(Se não houver, escolha algo relevante)'}
-      - Tamanho mínimo: ${minWords} palavras
-      - Tamanho máximo: ${maxWords} palavras
+      - Tópico específico: ${topic || 'Se não houver, escolha algo relevante'}
       - Tom de escrita: ${writingTone}
       - Complexidade: ${complexity}
-      
-      Gere um texto usando H1, H2, negritos, etc., com formatação Markdown, e ao final retorne também em JSON (como comentários ou no final) as seguintes informações:
-      - slug
-      - fraseChave
-      - etiquetas
-      - hashtags
-      - resumoPesquisa
+
+      **Inclua**:  
+      1. **Índice** (Table of Contents) em Markdown com links para os assuntos (ex: [Introdução](#introducao)).  
+      2. Use **H1** para o título principal, **H2** para seções, **H3** para subseções.  
+      3. Use negrito em palavras-chave ou conceitos importantes.  
+      4. Ao final, retorne em bloco \`\`\`json ...\`\`\`:
+         {
+           "slug": "...",
+           "fraseChave": "...",
+           "etiquetas": "...",
+           "hashtags": "...",
+           "resumoPesquisa": "..."
+         } 
+      Sem explicações adicionais. 
+      Garanta que o texto está **dentro** do limite de ${minWords} a ${maxWords} palavras.
       `;
 
-      // Lendo a Key do ChatGPT
+      // Ler a key do .env no Netlify (ou local) => VITE_OPENAI_API_KEY
       const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-      // Se preferir, no Netlify console, tente renomear a var para `VITE_OPENAI_API_KEY`,
-      // e use: const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-
       if (!OPENAI_API_KEY) {
-        setError('A variável OPENAI_API_KEY não foi encontrada. Verifique se você a definiu no Netlify e no build do Vite.');
+        setError('A variável VITE_OPENAI_API_KEY não foi encontrada. Verifique se a definiu no Netlify e no .env.');
         setFeedback('');
         return;
       }
@@ -118,7 +235,7 @@ function GerarConteudo() {
             }
           ],
           temperature: 0.7,
-          max_tokens: 1200
+          max_tokens: tokens
         })
       });
 
@@ -132,29 +249,31 @@ function GerarConteudo() {
         throw new Error('Texto vazio retornado pela API.');
       }
 
-      // Separar o trecho markdown do trecho JSON
+      // Extrair o bloco JSON do final
       let pureText = textResult;
       let metadata = {};
 
-      // Captura bloco ```json ... ```
       const regex = /```json([\s\S]*?)```/;
       const match = textResult.match(regex);
       if (match) {
         const jsonRaw = match[1].trim();
-        pureText = textResult.replace(regex, '').trim();
+        pureText = textResult.replace(regex, '').trim(); // remove o bloco do corpo principal
         try {
           metadata = JSON.parse(jsonRaw);
         } catch (err) {
-          console.error('Erro no parse do JSON:', err);
+          console.error('Erro ao parsear JSON de metadados:', err);
         }
       }
 
       setContentResult(pureText);
+
+      // Metadados
       setSlug(metadata.slug || '');
       setFraseChave(metadata.fraseChave || '');
       setEtiquetas(metadata.etiquetas || '');
       setHashtags(metadata.hashtags || '');
       setResumoPesquisa(metadata.resumoPesquisa || '');
+
       setFeedback('Conteúdo gerado com sucesso!');
     } catch (err) {
       setError('Erro ao gerar conteúdo: ' + err.message);
@@ -162,7 +281,7 @@ function GerarConteudo() {
     }
   };
 
-  // 4) Função para exportar docx
+  // Exportar docx com "formatação" (títulos e negrito)
   const exportDoc = async () => {
     if (!contentResult) {
       setError('Não há conteúdo para exportar.');
@@ -171,46 +290,44 @@ function GerarConteudo() {
     setError('');
 
     try {
-      // Monta doc
+      // Converte markdown para array de Paragraphs
+      const paragraphs = convertMarkdownToDocxParagraphs(contentResult);
+
+      // Adicionamos também os metadados
+      const metaParagraphs = [];
+      if (slug) {
+        metaParagraphs.push(new Paragraph({ children: [new TextRun({ text: `Slug: ${slug}` })] }));
+      }
+      if (fraseChave) {
+        metaParagraphs.push(new Paragraph({ children: [new TextRun({ text: `Frase-chave: ${fraseChave}` })] }));
+      }
+      if (etiquetas) {
+        metaParagraphs.push(new Paragraph({ children: [new TextRun({ text: `Etiquetas: ${etiquetas}` })] }));
+      }
+      if (hashtags) {
+        metaParagraphs.push(new Paragraph({ children: [new TextRun({ text: `Hashtags: ${hashtags}` })] }));
+      }
+      if (resumoPesquisa) {
+        metaParagraphs.push(new Paragraph({ children: [new TextRun({ text: `Resumo: ${resumoPesquisa}` })] }));
+      }
+
       const doc = new Document({
         sections: [
           {
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: 'Conteúdo Gerado', bold: true, size: 32 })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: contentResult, size: 24 })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: `Slug: ${slug}`, italics: true })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: `Frase-chave: ${fraseChave}` })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: `Etiquetas: ${etiquetas}` })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: `Hashtags: ${hashtags}` })]
-              }),
-              new Paragraph({
-                children: [new TextRun({ text: `Resumo: ${resumoPesquisa}` })]
-              })
-            ]
+            children: [...paragraphs, ...metaParagraphs]
           }
         ]
       });
 
       const blob = await Packer.toBlob(doc);
       saveAs(blob, 'conteudo-gerado.docx');
-      setFeedback('Arquivo .docx exportado com sucesso!');
+      setFeedback('Arquivo .docx exportado com formatação básica!');
     } catch (err) {
       setError('Erro ao exportar: ' + err.message);
     }
   };
 
-  // 5) Publicar
+  // Publicar (placeholder)
   const handlePublish = () => {
     if (!vertical) {
       setError('Selecione a vertical antes de publicar.');
@@ -253,7 +370,7 @@ function GerarConteudo() {
     );
     if (selected) {
       setFeedback(`Publicação solicitada em: ${selected}. (placeholder)`);
-      // Integração real com WP ou outras plataformas viria aqui.
+      // Integração real com WP ou redes sociais virá depois
     } else {
       setFeedback('Publicação cancelada.');
     }
@@ -415,7 +532,8 @@ function GerarConteudo() {
       <h2 className="text-xl font-bold mb-2">Resultado</h2>
       {contentResult ? (
         <div className="p-4 bg-gray-100 rounded mb-4">
-          <div dangerouslySetInnerHTML={{ __html: contentResult.replace(/\n/g, '<br/>') }} />
+          {/* Exibir com ReactMarkdown para ver títulos, negritos, links, etc. */}
+          <ReactMarkdown>{contentResult}</ReactMarkdown>
         </div>
       ) : (
         <p className="text-gray-600 mb-4">Nenhum conteúdo gerado ainda.</p>
@@ -436,3 +554,4 @@ function GerarConteudo() {
 }
 
 export default GerarConteudo;
+
