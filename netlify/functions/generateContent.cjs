@@ -22,8 +22,9 @@ exports.handler = async function(event) {
       writingTone
     } = bodyData;
 
+    // Prompt atualizado para gerar conteúdo no formato Markdown
     const prompt = `
-Por favor, gere um conteúdo com as seguintes características:
+Por favor, gere um conteúdo no formato Markdown com as seguintes características:
 - **Pilar:** ${pillar}
 - **Tipo de Conteúdo:** ${contentType}
 - **Tamanho do Texto:** ${textLength}
@@ -32,7 +33,15 @@ Por favor, gere um conteúdo com as seguintes características:
 - **Público-Alvo:** ${targetAudience}
 - **Tópico Específico:** ${specificTopic || 'Nenhum'}
 
-Estruture o texto com uma introdução, desenvolvimento (com dicas e argumentos) e conclusão.
+Instruções:
+1. Utilize **H1** para o título principal e **H2** para subtítulos.
+2. Destaque os pontos importantes usando **negrito** (usando ** para envolver o texto).
+3. Formate links internos no padrão Markdown, por exemplo, [texto](URL).
+4. Ao final do conteúdo, inclua uma seção separada intitulada "Metadados e Hashtags", listando:
+   - Principais palavras-chave para SEO.
+   - Sugestões de hashtags relevantes para WordPress, Yoast, Instagram, etc.
+   
+Estruture o texto com uma introdução, desenvolvimento (com dicas, argumentos e exemplos) e uma conclusão clara.
     `;
 
     const configuration = new Configuration({
@@ -43,14 +52,8 @@ Estruture o texto com uma introdução, desenvolvimento (com dicas e argumentos)
     const response = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
-        {
-          role: 'system',
-          content: 'Você é um assistente especializado em redação para blogs e redes sociais.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'system', content: 'Você é um assistente especializado em redação para blogs e redes sociais.' },
+        { role: 'user', content: prompt }
       ],
       max_tokens: 1000,
       temperature: 0.7

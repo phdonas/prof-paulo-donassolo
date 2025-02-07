@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 
 const AdminConfig = () => {
-  // Estado para armazenar as configurações das verticais
   const [config, setConfig] = useState({
     vertical: '',
     blogUrl: '',
@@ -15,12 +14,12 @@ const AdminConfig = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setConfig((prev) => ({ ...prev, [name]: value }));
+    setConfig(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    // Aqui você pode salvar a configuração no banco de dados ou em localStorage
+    // Aqui, você pode salvar as configurações localmente ou enviar para um back-end.
     console.log('Configurações salvas:', config);
     alert('Configurações salvas com sucesso!');
   };

@@ -4,7 +4,7 @@ import AdminConfig from '../components/AdminConfig';
 
 const Admin = () => {
   return (
-    <div>
+    <div className="container mx-auto p-4">
       <AdminConfig />
     </div>
   );
