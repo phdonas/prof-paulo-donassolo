@@ -1,7 +1,5 @@
 /** src/services/contentGenerationService.js **/
 
-/** src/services/contentGenerationService.js **/
-
 async function generateContent(params) {
   try {
     const response = await fetch('/.netlify/functions/generateContent', {
@@ -24,4 +22,3 @@ async function generateContent(params) {
 }
 
 export default { generateContent };
-;
