@@ -1,41 +1,47 @@
 /** src/components/Layout.jsx **/
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react'
+import { Link } from 'react-router-dom'
 
-const Layout = ({ children }) => {
+/**
+ * Este componente cria um cabeçalho fixo com 3 links (Dashboard, Admin, Gerar Conteúdo),
+ * um espaço para o conteúdo "children" e um rodapé simples.
+ */
+function Layout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-50">
-      {/* Cabeçalho */}
-      <header className="bg-primary text-white p-6 shadow-custom">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            {/* Substitua '/logo.png' pelo caminho do seu logotipo, se houver */}
-            <img src="/logo.png" alt="Logo" className="w-10 h-10" />
-            <h2 className="text-3xl font-bold">Gestão de Publicações PHD</h2>
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {/* Cabeçalho com cor azul e texto branco */}
+      <header className="bg-blue-600 text-white p-4">
+        <nav className="container mx-auto flex items-center justify-between">
+          <div className="text-xl font-bold">
+            Meu Projeto
           </div>
-          <nav className="flex space-x-6">
-            <Link to="/" className="text-lg hover:underline">Dashboard</Link>
-            <Link to="/gerar-conteudo" className="text-lg hover:underline">Gerar Conteúdo</Link>
-            <Link to="/admin" className="text-lg hover:underline">Admin</Link>
-          </nav>
-        </div>
+          <div className="space-x-6 text-lg">
+            <Link to="/" className="hover:underline">
+              Dashboard
+            </Link>
+            <Link to="/admin" className="hover:underline">
+              Admin
+            </Link>
+            <Link to="/gerar-conteudo" className="hover:underline">
+              Gerar Conteúdo
+            </Link>
+          </div>
+        </nav>
       </header>
-      
+
       {/* Conteúdo Principal */}
-      <main className="flex-1 container mx-auto p-8">
+      <main className="container mx-auto p-4 flex-1">
         {children}
       </main>
-      
+
       {/* Rodapé */}
-      <footer className="bg-neutral-200 text-center p-4">
-        <p className="text-sm text-neutral-700">
-          © {new Date().getFullYear()} Gestão de Publicações PHD. Todos os direitos reservados.
+      <footer className="bg-gray-300 text-center p-2">
+        <p className="text-sm text-gray-700">
+          © {new Date().getFullYear()} Meu Projeto
         </p>
       </footer>
     </div>
-  );
-};
+  )
+}
 
 export default Layout;
-
-

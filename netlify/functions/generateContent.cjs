@@ -1,6 +1,16 @@
 /** netlify/functions/generateContent.cjs **/
 
-const { Configuration, OpenAIApi } = require('openai');
+// Tente importar a biblioteca OpenAI
+const OpenAIImport = require("openai");
+
+// Tente obter os construtores diretamente ou via .default, se disponíveis
+const Configuration = OpenAIImport.Configuration || (OpenAIImport.default && OpenAIImport.default.Configuration);
+const OpenAIApi = OpenAIImport.OpenAIApi || (OpenAIImport.default && OpenAIImport.default.OpenAIApi);
+
+if (typeof Configuration !== 'function' || typeof OpenAIApi !== 'function') {
+  console.error("Falha ao importar os construtores da biblioteca OpenAI. Detalhes:", OpenAIImport);
+  throw new Error("Configuration não é um construtor.");
+}
 
 exports.handler = async function(event) {
   try {
@@ -22,21 +32,20 @@ exports.handler = async function(event) {
       writingTone
     } = bodyData;
 
-    // O prompt abaixo solicita:
-    // - Um texto entre 500 e 1000 palavras
-    // - Uso de H1, H2, H3, negrito, e uma seção "O que vamos ver" com links internos
-    // - Ao final, um bloco de observações formatado em HTML (Arial, Itálico, tamanho 8)
+    // Prompt atualizado para solicitar um conteúdo entre 500 e 1000 palavras,
+    // com seções internas ("O que vamos ver") e um bloco de observações formatado
     const prompt = `
 Por favor, gere um conteúdo no formato Markdown com as seguintes características:
-- Escreva como um profissional com mais de 20 anos de experiência no ${contentType} e no ${targetAudience} e em copywriting e storytelling.
+- O texto deve conter no máximo ${textLength} caracteres.
 - Utilize H1 para o título principal, H2 para subtítulos e H3 para seções internas.
 - Destaque os pontos importantes em **negrito**.
-- Inclua uma seção chamada "O que vamos ver" com links internos para as seções "Introdução", "Desenvolvimento" e "Conclusão". Por exemplo: [Introdução](#introducao), [Desenvolvimento](#desenvolvimento), [Conclusão](#conclusao).
-- Ao final do texto, inclua um bloco de observações (formate-o em HTML com fonte Arial, itálico, tamanho 8) com o seguinte conteúdo:
+- Insira uma introdução com palavras-chave e gancho de memória que capte a atenção do leitor
+- Inclua uma seção chamada "O que vamos ver" com links internos para as seções "Introdução", "Principal" e "Conclusão". Exemplo: [Introdução](#introducao), [Principal](#principal), [Conclusão](#conclusao).
+- Ao final do texto, adicione um bloco de observações formatado em HTML (fonte Arial, itálico, tamanho 8) com o seguinte conteúdo:
   
   <p style="font-family: Arial; font-style: italic; font-size: 8pt;">
   OBSERVAÇÕES:<br/>
-  Saiba mais sobre o Prof. Paulo H. Donassolo em https://www.linkedin.com/in/paulodonassolo/.<br/>
+  Publicado por Prof. Paulo H. Donassolo para ${pillar}.<br/>
   Código: ${pillar.slice(0,3).toUpperCase()}-${Date.now()}
   </p>
   
@@ -52,17 +61,22 @@ Utilize os seguintes parâmetros para o conteúdo:
 Estruture o texto com uma introdução, desenvolvimento (com dicas, argumentos e exemplos) e uma conclusão clara.
     `;
 
-    const configuration = new Configuration({
+    const configurationObj = new Configuration({
       apiKey: process.env.OPENAI_API_KEY
     });
-    const openai = new OpenAIApi(configuration);
+    const openai = new OpenAIApi(configurationObj);
 
-    // Aumentamos max_tokens para possibilitar textos maiores
     const response = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: 'chatGPT o1',
       messages: [
-        { role: 'system', content: 'Você é um assistente especializado em redação para blogs e redes sociais.' },
-        { role: 'user', content: prompt }
+        {
+          role: 'system',
+          content: 'Você é um assistente especializado em redação para blogs e redes sociais. Elabore o texto usando conceitos de copywriting/storytelling'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
       ],
       max_tokens: 1500,
       temperature: 0.7
