@@ -2,43 +2,48 @@
 import React, { useState } from 'react';
 
 const AdminConfig = () => {
+  // Configurações ampliadas para cada vertical
   const [config, setConfig] = useState({
-    vertical: '',
-    blogUrl: '',
-    instagram: '',
-    youtube: '',
-    facebook: '',
-    linkedin: '',
-    tiktok: '',
-    seoTitle: '',
-    mainKeyword: '',
-    metaDescription: '',
-    slug: '',
-    tags: '',
-    internalLinks: '' // Por exemplo, uma lista de tópicos ou links separados por vírgula
+    vertical: "Prof. Paulo H. Donassolo",
+    blogUrl: "",
+    instagram: "",
+    youtube: "",
+    facebook: "",
+    linkedin: "",
+    tiktok: "",
+    dataPublicacao: "",
+    horarioPublicacao: "",
+    etiquetas: "",
+    fraseChave: "",
+    apresentacaoPesquisa: "",
+    tituloSEO: "",
+    slug: "",
+    linksInternos: ""
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setConfig((prev) => ({ ...prev, [name]: value }));
+    setConfig(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    // Aqui você pode persistir as configurações, por exemplo, em um banco de dados ou localStorage.
+    // Salve as configurações (aqui usamos localStorage como exemplo)
+    const currentConfig = JSON.parse(localStorage.getItem("verticalConfig")) || {};
+    currentConfig[config.vertical] = config;
+    localStorage.setItem("verticalConfig", JSON.stringify(currentConfig));
     console.log('Configurações salvas:', config);
     alert('Configurações salvas com sucesso!');
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded shadow">
+    <div className="p-6 bg-white dark:bg-gray-800 rounded shadow max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Configurações de Vertical</h1>
       <form onSubmit={handleSave} className="space-y-4">
         {/* Vertical */}
         <div>
           <label className="block font-semibold">Vertical:</label>
           <select name="vertical" value={config.vertical} onChange={handleChange} className="w-full p-2 border rounded" required>
-            <option value="">Selecione a vertical</option>
             <option value="Prof. Paulo H. Donassolo">Prof. Paulo H. Donassolo</option>
             <option value="Sou Consultor Imobiliário">Sou Consultor Imobiliário</option>
             <option value="Sou Representante Comercial">Sou Representante Comercial</option>
@@ -47,7 +52,7 @@ const AdminConfig = () => {
             <option value="Vendas Pessoais">Vendas Pessoais</option>
           </select>
         </div>
-        {/* Dados dos Canais */}
+        {/* Dados para Publicação */}
         <div>
           <label className="block font-semibold">URL do Blog:</label>
           <input type="url" name="blogUrl" value={config.blogUrl} onChange={handleChange} placeholder="https://seublog.com" className="w-full p-2 border rounded" required/>
@@ -72,31 +77,41 @@ const AdminConfig = () => {
           <label className="block font-semibold">TikTok:</label>
           <input type="text" name="tiktok" value={config.tiktok} onChange={handleChange} placeholder="@seuPerfilTikTok" className="w-full p-2 border rounded" required/>
         </div>
+        {/* Campos para Agendamento */}
+        <div className="flex space-x-4">
+          <div className="flex-1">
+            <label className="block font-semibold">Data de Publicação Padrão:</label>
+            <input type="date" name="dataPublicacao" value={config.dataPublicacao} onChange={handleChange} className="w-full p-2 border rounded" />
+          </div>
+          <div className="flex-1">
+            <label className="block font-semibold">Horário de Publicação Padrão:</label>
+            <input type="time" name="horarioPublicacao" value={config.horarioPublicacao} onChange={handleChange} className="w-full p-2 border rounded" />
+          </div>
+        </div>
         {/* Campos SEO */}
         <div>
-          <label className="block font-semibold">Título SEO:</label>
-          <input type="text" name="seoTitle" value={config.seoTitle} onChange={handleChange} placeholder="Título otimizado para SEO" className="w-full p-2 border rounded" required/>
+          <label className="block font-semibold">Etiquetas (Tags):</label>
+          <input type="text" name="etiquetas" value={config.etiquetas} onChange={handleChange} placeholder="Separe por vírgulas" className="w-full p-2 border rounded" />
         </div>
         <div>
           <label className="block font-semibold">Frase-chave Principal:</label>
-          <input type="text" name="mainKeyword" value={config.mainKeyword} onChange={handleChange} placeholder="Ex: vendas, negociação" className="w-full p-2 border rounded" required/>
+          <input type="text" name="fraseChave" value={config.fraseChave} onChange={handleChange} placeholder="Digite a frase-chave" className="w-full p-2 border rounded" />
         </div>
         <div>
-          <label className="block font-semibold">Meta Description:</label>
-          <textarea name="metaDescription" value={config.metaDescription} onChange={handleChange} placeholder="Apresentação da pesquisa / descrição para SEO" className="w-full p-2 border rounded" required/>
+          <label className="block font-semibold">Apresentação da Pesquisa:</label>
+          <textarea name="apresentacaoPesquisa" value={config.apresentacaoPesquisa} onChange={handleChange} placeholder="Descreva a pesquisa" className="w-full p-2 border rounded" rows="3"></textarea>
+        </div>
+        <div>
+          <label className="block font-semibold">Título SEO:</label>
+          <input type="text" name="tituloSEO" value={config.tituloSEO} onChange={handleChange} placeholder="Digite o Título SEO" className="w-full p-2 border rounded" />
         </div>
         <div>
           <label className="block font-semibold">Slug:</label>
-          <input type="text" name="slug" value={config.slug} onChange={handleChange} placeholder="exemplo-do-slug" className="w-full p-2 border rounded" required/>
+          <input type="text" name="slug" value={config.slug} onChange={handleChange} placeholder="digite-o-slug" className="w-full p-2 border rounded" />
         </div>
         <div>
-          <label className="block font-semibold">Etiquetas (Tags):</label>
-          <input type="text" name="tags" value={config.tags} onChange={handleChange} placeholder="tag1, tag2, tag3" className="w-full p-2 border rounded" required/>
-        </div>
-        {/* Campo para Links Internos */}
-        <div>
-          <label className="block font-semibold">O que vamos ver (Links Internos):</label>
-          <textarea name="internalLinks" value={config.internalLinks} onChange={handleChange} placeholder="Exemplo: Tópico 1, Tópico 2, Tópico 3" className="w-full p-2 border rounded" required/>
+          <label className="block font-semibold">Links Internos (Menu "O que vamos ver"):</label>
+          <textarea name="linksInternos" value={config.linksInternos} onChange={handleChange} placeholder="Ex: Introdução: #introducao, Desenvolvimento: #desenvolvimento, Conclusão: #conclusao" className="w-full p-2 border rounded" rows="2"></textarea>
         </div>
         <button type="submit" className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">
           Salvar Configurações
@@ -107,3 +122,4 @@ const AdminConfig = () => {
 };
 
 export default AdminConfig;
+

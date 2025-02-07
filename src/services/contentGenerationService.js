@@ -1,12 +1,12 @@
 /** src/services/contentGenerationService.js **/
 
+/** src/services/contentGenerationService.js **/
+
 async function generateContent(params) {
   try {
     const response = await fetch('/.netlify/functions/generateContent', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
     if (!response.ok) {
@@ -24,3 +24,4 @@ async function generateContent(params) {
 }
 
 export default { generateContent };
+;

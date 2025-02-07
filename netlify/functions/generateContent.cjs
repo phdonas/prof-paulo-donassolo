@@ -22,20 +22,21 @@ exports.handler = async function(event) {
       writingTone
     } = bodyData;
 
-    // Gere um conteúdo entre 500 e 1000 palavras.
-    // Solicite também que o texto inclua uma seção "O que vamos ver" com links internos para os principais tópicos.
-    // Ao final, adicione um bloco de observações formatado em HTML com fonte Arial, itálico, tamanho 8.
+    // O prompt abaixo solicita:
+    // - Um texto entre 500 e 1000 palavras
+    // - Uso de H1, H2, H3, negrito, e uma seção "O que vamos ver" com links internos
+    // - Ao final, um bloco de observações formatado em HTML (Arial, Itálico, tamanho 8)
     const prompt = `
-Gere um conteúdo no formato Markdown com as seguintes características e formato:
-- O texto deve conter entre 500 e 1000 palavras.
-- Utilize H1 para o título, H2 para subtítulos e H3 para seções internas.
-- Destaque os itens importantes em **negrito**.
-- Insira uma seção intitulada "O que vamos ver" com um menu de links internos para os principais tópicos (ex.: [Introdução](#introducao), [Desenvolvimento](#desenvolvimento), [Conclusão](#conclusao)).
-- No final do conteúdo, adicione um bloco com as seguintes observações (formatado em HTML com fonte Arial, itálico, tamanho 8):
+Por favor, gere um conteúdo no formato Markdown com as seguintes características:
+- Escreva como um profissional com mais de 20 anos de experiência no ${contentType} e no ${targetAudience} e em copywriting e storytelling.
+- Utilize H1 para o título principal, H2 para subtítulos e H3 para seções internas.
+- Destaque os pontos importantes em **negrito**.
+- Inclua uma seção chamada "O que vamos ver" com links internos para as seções "Introdução", "Desenvolvimento" e "Conclusão". Por exemplo: [Introdução](#introducao), [Desenvolvimento](#desenvolvimento), [Conclusão](#conclusao).
+- Ao final do texto, inclua um bloco de observações (formate-o em HTML com fonte Arial, itálico, tamanho 8) com o seguinte conteúdo:
   
   <p style="font-family: Arial; font-style: italic; font-size: 8pt;">
   OBSERVAÇÕES:<br/>
-  Este texto foi escrito em português do Brasil. As palavras entre aspas são usadas para descrever figuras de linguagem ou termos que podem ser considerados polêmicos por alguns indivíduos. Eles não representam nenhum preconceito ou posição sociopolítico, filosófico, religioso, econômico ou ideológico. <br/>
+  Saiba mais sobre o Prof. Paulo H. Donassolo em https://www.linkedin.com/in/paulodonassolo/.<br/>
   Código: ${pillar.slice(0,3).toUpperCase()}-${Date.now()}
   </p>
   
@@ -47,7 +48,7 @@ Utilize os seguintes parâmetros para o conteúdo:
 - **Tom de Escrita:** ${writingTone}
 - **Público-Alvo:** ${targetAudience}
 - **Tópico Específico:** ${specificTopic || 'Nenhum'}
-  
+
 Estruture o texto com uma introdução, desenvolvimento (com dicas, argumentos e exemplos) e uma conclusão clara.
     `;
 
@@ -56,13 +57,14 @@ Estruture o texto com uma introdução, desenvolvimento (com dicas, argumentos e
     });
     const openai = new OpenAIApi(configuration);
 
+    // Aumentamos max_tokens para possibilitar textos maiores
     const response = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: 'Você é um assistente especializado em redação para blogs e redes sociais.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 1500,  // aumentando max_tokens para possibilitar textos maiores
+      max_tokens: 1500,
       temperature: 0.7
     });
 

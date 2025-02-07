@@ -6,7 +6,6 @@ import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 
 const defaultParams = {
-  // Vertical será o primeiro item da lista de verticais (ex.: "Prof. Paulo H. Donassolo")
   vertical: "Prof. Paulo H. Donassolo",
   pillar: "Gestão de Vendas",
   contentType: "Artigo",
@@ -24,7 +23,7 @@ const ContentGenerationWorkflow = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setParams((prev) => ({ ...prev, [name]: value }));
+    setParams(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -35,7 +34,7 @@ const ContentGenerationWorkflow = () => {
     setLoading(false);
   };
 
-  // Função para exportar o conteúdo para DOCX
+  // Função para exportar o conteúdo para DOCX com formatação para o bloco de observações
   const exportToWord = async () => {
     if (!result) return;
     // Cria um documento simples
@@ -64,10 +63,11 @@ const ContentGenerationWorkflow = () => {
                 })
               ]
             }),
+            // Aqui adicionamos um bloco de observações com formatação específica
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `OBSERVAÇÕES:\nSaiba mais em nossas outras publicações PHDonassolo Consultoria e nas publicações sobre o mercado de trabalho para quem tem 40, 50 ou mais anos de idade. São conteúdos para quem está nestes grupos ou para quem tem interesse nestes grupos.\nCódigo: ${params.vertical.slice(0,3).toUpperCase()}-001`,
+                  text: "OBSERVAÇÕES: Para saber mais sobre o Prof. Paulo H. Donassolo e nossas outras publicações visite https://www.linkedin.com/in/paulodonassolo/. Código: " + params.vertical.slice(0,3).toUpperCase() + "-001",
                   italics: true,
                   size: 16,
                   font: "Arial"
@@ -81,6 +81,18 @@ const ContentGenerationWorkflow = () => {
     // Gera o documento DOCX
     const blob = await Packer.toBlob(doc);
     saveAs(blob, "conteudo.docx");
+  };
+
+  // Função placeholder para "Publicar no WordPress"
+  const publicarNoWordPress = () => {
+    // Aqui você pode integrar com a API do WordPress ou redirecionar para a URL configurada na vertical
+    // Por exemplo, usando um valor simulado armazenado no localStorage ou configurado em Admin
+    const config = JSON.parse(localStorage.getItem("verticalConfig"));
+    if (config && config[params.vertical] && config[params.vertical].blogUrl) {
+      window.open(config[params.vertical].blogUrl, '_blank');
+    } else {
+      alert("Nenhuma configuração de blog encontrada para a vertical " + params.vertical);
+    }
   };
 
   return (
@@ -172,9 +184,14 @@ const ContentGenerationWorkflow = () => {
           <div className="prose max-w-none">
             <ReactMarkdown>{result.content}</ReactMarkdown>
           </div>
-          <button onClick={exportToWord} className="mt-4 bg-green-600 text-white p-2 rounded hover:bg-green-700">
-            Exportar para Word
-          </button>
+          <div className="mt-4 flex space-x-4">
+            <button onClick={exportToWord} className="bg-green-600 text-white p-2 rounded hover:bg-green-700">
+              Exportar para Word
+            </button>
+            <button onClick={publicarNoWordPress} className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700">
+              Publicar no WordPress
+            </button>
+          </div>
         </div>
       )}
     </div>
