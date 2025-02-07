@@ -1,16 +1,18 @@
 /** src/pages/Admin.jsx **/
 import React from 'react';
-import AdminConfig from '../components/AdminConfig';
+import AdminPillars from '../components/AdminPillars';
 
 const Admin = () => {
   return (
     <div className="container mx-auto p-6">
-      <AdminConfig />
+      <AdminPillars />
     </div>
   );
 };
 
 export default Admin;
+
+
 
 
 

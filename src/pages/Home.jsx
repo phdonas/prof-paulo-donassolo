@@ -1,5 +1,5 @@
 /** src/pages/Home.jsx **/
-import React from 'react'
+import React from 'react';
 
 const Home = () => {
   return (
@@ -12,7 +12,8 @@ const Home = () => {
         Use o painel para gerar conteúdos automatizados, agendar publicações e acompanhar métricas.
       </p>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
+

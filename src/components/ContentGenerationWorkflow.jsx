@@ -1,5 +1,5 @@
 /** src/components/ContentGenerationWorkflow.jsx **/
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ContentGenerationService from '../services/contentGenerationService';
 import ReactMarkdown from 'react-markdown';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -12,14 +12,30 @@ const defaultParams = {
   textLength: "Médio (500-1000 palavras)",
   targetAudience: "Consultores Imobiliários",
   specificTopic: "",
-  complexityLevel: "Básico",
-  writingTone: "Neutro"
+  complexityLevel: "Médio",
+  writingTone: "Formal"
 };
 
 const ContentGenerationWorkflow = () => {
   const [params, setParams] = useState(defaultParams);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [verticalOptions, setVerticalOptions] = useState([]);
+
+  // Carrega as verticais (pilares) cadastradas na aba Admin
+  useEffect(() => {
+    const storedPillars = JSON.parse(localStorage.getItem("pillars"));
+    if (storedPillars) {
+      const keys = Object.keys(storedPillars);
+      setVerticalOptions(keys);
+      // Atualiza o valor default da vertical se houver pilares cadastrados
+      if (keys.length > 0) {
+        setParams(prev => ({ ...prev, vertical: keys[0] }));
+      }
+    } else {
+      setVerticalOptions([defaultParams.vertical]);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,10 +50,9 @@ const ContentGenerationWorkflow = () => {
     setLoading(false);
   };
 
-  // Função para exportar o conteúdo para DOCX com formatação para o bloco de observações
+  // Função para exportar o conteúdo para DOCX
   const exportToWord = async () => {
     if (!result) return;
-    // Cria um documento simples
     const doc = new Document({
       sections: [
         {
@@ -63,11 +78,10 @@ const ContentGenerationWorkflow = () => {
                 })
               ]
             }),
-            // Aqui adicionamos um bloco de observações com formatação específica
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "OBSERVAÇÕES: Para saber mais sobre o Prof. Paulo H. Donassolo e nossas outras publicações visite https://www.linkedin.com/in/paulodonassolo/. Código: " + params.vertical.slice(0,3).toUpperCase() + "-001",
+                  text: "OBSERVAÇÕES: Saiba mais em nossas outras publicações PHDonassolo Consultoria e nas publicações sobre o mercado de trabalho para quem tem 40, 50 ou mais anos de idade. São conteúdos para quem está nestes grupos ou para quem tem interesse nestes grupos. Código: " + params.vertical.slice(0,3).toUpperCase() + "-001",
                   italics: true,
                   size: 16,
                   font: "Arial"
@@ -78,18 +92,15 @@ const ContentGenerationWorkflow = () => {
         }
       ]
     });
-    // Gera o documento DOCX
     const blob = await Packer.toBlob(doc);
     saveAs(blob, "conteudo.docx");
   };
 
   // Função placeholder para "Publicar no WordPress"
   const publicarNoWordPress = () => {
-    // Aqui você pode integrar com a API do WordPress ou redirecionar para a URL configurada na vertical
-    // Por exemplo, usando um valor simulado armazenado no localStorage ou configurado em Admin
-    const config = JSON.parse(localStorage.getItem("verticalConfig"));
-    if (config && config[params.vertical] && config[params.vertical].blogUrl) {
-      window.open(config[params.vertical].blogUrl, '_blank');
+    const storedPillars = JSON.parse(localStorage.getItem("pillars"));
+    if (storedPillars && storedPillars[params.vertical] && storedPillars[params.vertical].blogUrl) {
+      window.open(storedPillars[params.vertical].blogUrl, '_blank');
     } else {
       alert("Nenhuma configuração de blog encontrada para a vertical " + params.vertical);
     }
@@ -99,22 +110,19 @@ const ContentGenerationWorkflow = () => {
     <div className="p-6 bg-white dark:bg-gray-800 rounded shadow max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Gerar Conteúdo Automático</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Vertical */}
+        {/* Vertical (dinâmico) */}
         <div>
           <label className="block font-semibold">Vertical:</label>
-          <select name="vertical" value={params.vertical} onChange={handleChange} className="w-full p-2 border rounded" required>
-            <option value="Prof. Paulo H. Donassolo">Prof. Paulo H. Donassolo</option>
-            <option value="Sou Consultor Imobiliário">Sou Consultor Imobiliário</option>
-            <option value="Sou Representante Comercial">Sou Representante Comercial</option>
-            <option value="Academia do Gás">Academia do Gás</option>
-            <option value="4050oumais">4050oumais</option>
-            <option value="Vendas Pessoais">Vendas Pessoais</option>
+          <select name="vertical" value={params.vertical} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
+            {verticalOptions.map((v, idx) => (
+              <option key={idx} value={v}>{v}</option>
+            ))}
           </select>
         </div>
         {/* Pilar */}
         <div>
           <label className="block font-semibold">Pilar:</label>
-          <select name="pillar" value={params.pillar} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="pillar" value={params.pillar} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Gestão de Vendas">Gestão de Vendas</option>
             <option value="Vendas e Negociação">Vendas e Negociação</option>
             <option value="Marketing Digital">Marketing Digital</option>
@@ -124,7 +132,7 @@ const ContentGenerationWorkflow = () => {
         {/* Tipo de Conteúdo */}
         <div>
           <label className="block font-semibold">Tipo de Conteúdo:</label>
-          <select name="contentType" value={params.contentType} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="contentType" value={params.contentType} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Artigo">Artigo</option>
             <option value="Post">Post</option>
             <option value="Reel">Reel</option>
@@ -135,7 +143,7 @@ const ContentGenerationWorkflow = () => {
         {/* Tamanho do Texto */}
         <div>
           <label className="block font-semibold">Tamanho do Texto:</label>
-          <select name="textLength" value={params.textLength} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="textLength" value={params.textLength} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Médio (500-1000 palavras)">Médio (500-1000 palavras)</option>
             <option value="Curto (300-500 palavras)">Curto (300-500 palavras)</option>
             <option value="Longo (1000-2000 palavras)">Longo (1000-2000 palavras)</option>
@@ -144,7 +152,7 @@ const ContentGenerationWorkflow = () => {
         {/* Público-Alvo */}
         <div>
           <label className="block font-semibold">Público-Alvo:</label>
-          <select name="targetAudience" value={params.targetAudience} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="targetAudience" value={params.targetAudience} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Consultores Imobiliários">Consultores Imobiliários</option>
             <option value="Gestores">Gestores</option>
             <option value="Clientes">Clientes</option>
@@ -153,12 +161,12 @@ const ContentGenerationWorkflow = () => {
         {/* Tópico Específico */}
         <div>
           <label className="block font-semibold">Tópico Específico (Opcional):</label>
-          <input type="text" name="specificTopic" value={params.specificTopic} onChange={handleChange} placeholder="Digite um tópico específico" className="w-full p-2 border rounded"/>
+          <input type="text" name="specificTopic" value={params.specificTopic} onChange={handleChange} placeholder="Digite um tópico específico" className="w-full p-2 border rounded-xl" />
         </div>
         {/* Nível de Complexidade */}
         <div>
           <label className="block font-semibold">Nível de Complexidade:</label>
-          <select name="complexityLevel" value={params.complexityLevel} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="complexityLevel" value={params.complexityLevel} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Básico">Básico</option>
             <option value="Médio">Médio</option>
             <option value="Avançado">Avançado</option>
@@ -167,15 +175,23 @@ const ContentGenerationWorkflow = () => {
         {/* Tom de Escrita */}
         <div>
           <label className="block font-semibold">Tom de Escrita:</label>
-          <select name="writingTone" value={params.writingTone} onChange={handleChange} className="w-full p-2 border rounded" required>
+          <select name="writingTone" value={params.writingTone} onChange={handleChange} className="w-full p-2 border rounded-xl" required>
             <option value="Neutro">Neutro</option>
             <option value="Formal">Formal</option>
             <option value="Informal">Informal</option>
           </select>
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          {loading ? 'Gerando...' : 'Gerar Conteúdo'}
-        </button>
+        <div className="flex space-x-4">
+          <button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700">
+            {loading ? 'Gerando...' : 'Gerar Conteúdo'}
+          </button>
+          <button type="button" onClick={exportToWord} className="flex-1 bg-green-600 text-white p-2 rounded-xl hover:bg-green-700">
+            Exportar para Word
+          </button>
+          <button type="button" onClick={publicarNoWordPress} className="flex-1 bg-purple-600 text-white p-2 rounded-xl hover:bg-purple-700">
+            Publicar no WordPress
+          </button>
+        </div>
       </form>
 
       {result && (
@@ -183,14 +199,6 @@ const ContentGenerationWorkflow = () => {
           <h3 className="text-xl font-bold mb-2">{result.title}</h3>
           <div className="prose max-w-none">
             <ReactMarkdown>{result.content}</ReactMarkdown>
-          </div>
-          <div className="mt-4 flex space-x-4">
-            <button onClick={exportToWord} className="bg-green-600 text-white p-2 rounded hover:bg-green-700">
-              Exportar para Word
-            </button>
-            <button onClick={publicarNoWordPress} className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700">
-              Publicar no WordPress
-            </button>
           </div>
         </div>
       )}
